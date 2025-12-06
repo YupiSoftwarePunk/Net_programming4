@@ -11,6 +11,7 @@ namespace server
     {
         private static readonly List<TcpClient> clients = new();
         private static readonly object locker = new();
+        private static int messagesCount = 0;
 
         public static void AddClient(TcpClient client)
         {
@@ -42,6 +43,10 @@ namespace server
 
                     string message = Encoding.UTF8.GetString(buffer, 0, read);
                     Console.WriteLine("Сообщение от клиента: " + message);
+                    lock (locker)
+                    {
+                        messagesCount++;
+                    }
 
                     await SendMessageAsync(client, message);
                 }
@@ -77,6 +82,16 @@ namespace server
                 {
                     Console.WriteLine($"Ошибка при отправке: {ex.Message}");
                 }
+            }
+        }
+
+
+
+        public static int MessagesCount()
+        {
+            lock (locker)
+            {
+                return messagesCount;
             }
         }
     }

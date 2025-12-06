@@ -16,6 +16,7 @@ namespace client.Serveces
         private readonly string userName;
 
         public event Action<string>? MessageReceived;
+        public event Action<string>? MessageSent;
 
         public TcpClientService(string serverIp, int port, string userName)
         {
@@ -30,9 +31,14 @@ namespace client.Serveces
         {
             if (stream == null) return;
 
-            string formatted = $"MSG:{userName}:{message}";
+            string formatted = $"{userName}:{message}";
             byte[] data = Encoding.UTF8.GetBytes(formatted);
             await stream.WriteAsync(data, 0, data.Length);
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MessageSent?.Invoke($"Мое: {message}");
+            });
         }
 
         private async Task ReceiveMessages()

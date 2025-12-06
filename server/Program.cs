@@ -13,7 +13,9 @@ namespace server
             Console.WriteLine("TCP сервер запущен...");
 
 
-            UDPServer.Start(8081);
+            UDPServer.Start(8082);            
+            
+            HttpServer.Start();
 
             while (true)
             {

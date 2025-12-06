@@ -1,6 +1,8 @@
 ﻿using client.Serveces;
+using client.Services;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows;
@@ -22,11 +24,12 @@ namespace client
     {
         private string onlineUsers = "Пользователей онлайн: 0";
         public string UserName { get; }
-        private TcpClient client;
 
 
         private TcpClientService tcpService;
         private UDPClientService udpService;
+        private HttpService httpService;
+        private WeatherService weatherService;
 
 
         private static readonly string[] AvailableNames = new[]
@@ -45,7 +48,13 @@ namespace client
         public string MessageInput
         {
             get => messageInput;
-            set { messageInput = value; }
+            set 
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    messageInput = value;
+                });
+            }
         }
 
         public string OnlineUsers
@@ -70,17 +79,26 @@ namespace client
             Random random = new Random();
             UserName = AvailableNames[random.Next(AvailableNames.Length)];
 
-            tcpService = new TcpClientService("192.168.43.159", 8080, UserName);
+
+            tcpService = new TcpClientService("192.168.31.146", 8080, UserName);
             tcpService.MessageReceived += msg =>
             {
                 Application.Current.Dispatcher.Invoke(() => Messages.Add(msg));
             };
 
-            udpService = new UDPClientService("192.168.43.159", 8081, UserName);
+            tcpService.MessageSent += msg =>
+            {
+                Application.Current.Dispatcher.Invoke(() => Messages.Add(msg));
+            };
+
+
+            udpService = new UDPClientService("192.168.31.146", 8082, UserName);
             udpService.NotificationReceived += msg =>
             {
-                Application.Current.Dispatcher.Invoke(() => Notifications.Add(msg));
+                Application.Current.Dispatcher.Invoke(() => Messages.Add(msg));
             };
+
+
             udpService.OnlineCountChanged += count =>
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -88,6 +106,12 @@ namespace client
                     OnlineUsers = $"Пользователей онлайн: {count}";
                 });
             };
+
+
+            httpService = new HttpService("http://192.168.31.146:5000/api/");
+
+
+            weatherService = new WeatherService("8ac6dac1419c86360ea78a30704379b6");
 
             _ = udpService.ConnectAsync();
         }
@@ -107,10 +131,52 @@ namespace client
             if (!string.IsNullOrWhiteSpace(MessageInput))
             {
                 string messageToSend = MessageInput;
-                MessageInput = "";
-                var stream = client.GetStream();
-                byte[] data = Encoding.UTF8.GetBytes($"MSG:{UserName}:{messageToSend}");
-                await stream.WriteAsync(data, 0, data.Length);
+                await tcpService.SendMessageAsync(messageToSend);
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageInputBox.Text = "";
+                });
+            }
+        }
+
+        public async void StatsClick(object sender, RoutedEventArgs e)
+        {
+            var stats = await httpService.GetStatsAsync();
+
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Messages.Add($"Статистика: Пользователей онлайн = {stats.UsersCount}, " +
+                    $"Количество сообщений = {stats.MessagesCount}");
+                });
+            }
+            catch (Exception ex)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Messages.Add("Ошибка HTTP: " + ex.Message);
+                });
+            }
+        }
+
+
+
+        public async void WeatherClick(object sender, RoutedEventArgs e)
+        {
+            var weather = await weatherService.GetWeatherAsync("Екатеринбург");
+            try
+            {
+                string msg = $"Погода в {weather.City}: {weather.Temp}°C, {weather.Description}";
+                await tcpService.SendMessageAsync(msg);
+            }
+            catch (Exception ex)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Messages.Add("Ошибка получения погоды" + ex.Message);
+                });
             }
         }
     }

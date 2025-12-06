@@ -19,14 +19,30 @@
             <TextBlock Text="Чат" 
                        Foreground="White" FontSize="18" FontWeight="Bold"
                        VerticalAlignment="Center" Margin="15,0,0,0"/>
+            
             <TextBlock Text="{Binding UserName}"
                        Foreground="LightBlue" FontSize="14" FontWeight="SemiBold"
                        VerticalAlignment="Center" Margin="10,0,0,0"/>
+            
             <TextBlock x:Name="OnlineCounter"
                        Text="{Binding OnlineUsers}"
                        Foreground="LightGreen" FontSize="14" FontWeight="SemiBold"
                        VerticalAlignment="Center" Margin="20,0,0,0"
-                       DockPanel.Dock="Right"/>
+                       DockPanel.Dock="Left"/>
+            
+            <Button Content="Погода"
+                    Margin="100,0,0,0"
+                    HorizontalAlignment="Center"
+                    Click="WeatherClick"
+                    Background="DarkBlue" Foreground="White"
+                    FontWeight="Bold" BorderThickness="0"
+                    Width="120" Height="40"/>   
+            
+            <Button x:Name="GetStatistics" Width="120" Height="40" HorizontalAlignment="Right"
+                    Background="DarkOrange" Foreground="White"
+                    Content="Статистика" FontWeight="Bold" BorderThickness="0"
+                    Click="StatsClick" Margin="5"/>
+            
         </DockPanel>
 
 
@@ -48,6 +64,7 @@
                      BorderBrush="#2b5278" BorderThickness="2"
                      VerticalContentAlignment="Center"
                      Margin="0,0,10,0"/>
+            
             <Button Content="Отправить" Width="120" Height="40"
                     Click="SendMessageClick"
                     Background="#2b5278" Foreground="White"
